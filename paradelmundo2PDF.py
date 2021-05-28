@@ -6,7 +6,7 @@ from datetime import datetime
 from dominate import document
 from dominate.tags import *
 from dominate.util import raw
-
+from jinja2 import Environment, FileSystemLoader
 
 class Entrada:
     def __init__(self, id, autor, fecha, ultimo_cambio, titulo, contenido, categorias, etiquetas, numero_comentarios, comentarios):
@@ -23,7 +23,6 @@ class Entrada:
 
     def __str__(self):
         return '%s, %s, %s, %s, %s, %s' % (self.id, self.titulo, self.autor, self.fecha, self.ultimo_cambio, self.numero_comentarios)
-
 class Comentario:
     def __init__(self, estado, fecha_comentario, autor_comentario, email, contenido_comentario):
         self.estado = estado
@@ -34,49 +33,6 @@ class Comentario:
     
     def __str__(self):
         return '%d, %d, %d, %d, %d' % (self.autor_comentario, self.fecha_comentario, self.email, self.estado, self.contenido_comentario)
-
-# # class MyHTMLParser(HTMLParser):
-#     def handle_starttag(self, tag, attrs):
-#         print("Etiqueta inicial:", tag)
-#         logging.debug(f'starttag {tag}')
-#         for attr in attrs:
-#             print(">> atributo:", attr)
-#             logging.debug(f'attr {attr}')
-#         return tag, attrs
-
-#     def handle_endtag(self, tag):
-#         print("Etiqueta final  :", tag)
-#         logging.debug(f'endtag {tag}')
-#         return tag
-
-#     def handle_data(self, data):
-#         print(">>>> Contenido:", data)
-#         logging.debug(f'data {data}')
-#         return data
-
-#     def handle_comment(self, data):
-#         print("Comment  :", data)
-#         logging.debug(f'comment {data}')
-#         return data
-
-#     def handle_entityref(self, name):
-#         c = chr(name2codepoint[name])
-#         print("Named ent:", c)
-#         logging.debug(f'entityref {c}')
-#         return c
-
-#     def handle_charref(self, name):
-#         if name.startswith('x'):
-#             c = chr(int(name[1:], 16))
-#         else:
-#             c = chr(int(name))
-#         print("Num ent  :", c)
-#         logging.debug(f'charref {c}')
-
-#     def handle_decl(self, data):
-#         print("Decl     :", data)
-#         logging.debug(f'decl {data}')
-
 class ImgsParser(HTMLParser):
   def __init__(self):
     HTMLParser.__init__(self)
@@ -100,7 +56,6 @@ class ImgsParser(HTMLParser):
       pass
     # if self.recording:
     #   self.data.append(data)
-
 
 def leer_csv(archivo):
     logging.info(f'leer_csv [{archivo}]')
@@ -182,8 +137,6 @@ def tratar_imagenes(data):
                 if attr[0] == 'src':
                     img_corregida = corregir_img(attr[1])
                     contenido = data.replace(attr[1],img_corregida)
-                    #attr[1] = img_corregida
-                    print(attr)
     return contenido
 
 def corregir_img(img):
@@ -193,7 +146,6 @@ def corregir_img(img):
     if img is not None:
         if "uploads" in img:
             resultado = f'{ruta_local}{img[img.find("uploads"):]}'
-
     return resultado
 
 def formatear_entrada(entrada):
@@ -231,24 +183,47 @@ def borrar_enlaces(contenido):
 
 def formato_HTML(entrada):
     logging.info('formato_HTML')
-    entrada_html = div(id='entrada')
-    header  = entrada_html.add(div(id='header'))
-    header.add(h1(entrada.titulo))
-    header.add(h2(entrada.autor))
-    header.add(h4(entrada.fecha))
-    header.add(h4(entrada.ultimo_cambio))
-    content = entrada_html.add(div(id='content'))
-    content.add_raw_string(entrada.contenido)
-    footer  = entrada_html.add(div(id='footer'))
-    if len(entrada.comentarios) > 0:
-        comentario_html = footer.add(div(id='comentario'))
-        for comentario in entrada.comentarios:
-            comentario_html.add(h5(comentario.autor_comentario))
-            comentario_html.add(h6(comentario.fecha_comentario))
-            comentario_html.add(p(comentario.contenido_comentario))
-
+    entrada_html = div(cls='col-md-12', id=f'entrada_{entrada.id}')
+    with entrada_html:
+        footer  = entrada_html.add(div(id='comentarios'))
+        if len(entrada.comentarios) > 0:
+            comentario_html = footer.add(div(id='comentario'))
+            for comentario in entrada.comentarios:
+                comentario_html.add(h5(comentario.autor_comentario))
+                comentario_html.add(p(comentario.fecha_comentario))
+                comentario_html.add(p(comentario.contenido_comentario))
+        div(raw(entrada.contenido),id='contenido')
+        
+        descrip = address()
+        descrip.add(strong(entrada.autor))
+        descrip.add(br())
+        descrip.add(raw(f'Fecha: {entrada.fecha} Último cambio: {entrada.ultimo_cambio}'))
+        header = div(id='header')
+        header.add(h3(entrada.titulo))
+        header.add(descrip)
+        
+        
+        
     #return f'{entrada.id} {entrada.titulo} {entrada.autor} {entrada.fecha} {entrada.ultimo_cambio} {entrada.numero_comentarios} \n   {entrada.contenido}\n'
     return f'{entrada_html}\n'
+
+def formato_final(entradas):
+    logging.info('formato_final')
+    doc = document(title='Paradelmundoquenosbajamos')
+    with doc.head:
+        link(rel='stylesheet', href='css/style.css')
+        link(rel='stylesheet', href='css/bootstrap.min.css')
+        meta(charset='utf-8')
+        meta(name='viewport', content='width=device-width, initial-scale=1')
+    with doc:
+        if entradas is not None:
+            with div(cls='container-fluid'):
+                for entrada in entradas:
+                    with div(cls='row'):
+                        entrada_formateada = formato_HTML(entrada)
+                        raw(entrada_formateada)
+        
+    return doc.render()
 
 def generar_marca():
     t = datetime.now()
@@ -271,33 +246,18 @@ def escribir_html(html, archivo):
         html_file.write(html)
         html_file.close()
 
-def formato_final(entradas):
-    logging.info('formato_final')
-    doc = document(title='Paradelmundoquenosbajamos')
-    with doc.head:
-        link(rel='stylesheet', href='style.css')
-    with doc:
-        if entradas is not None:
-            for entrada in entradas:
-                entrada_formateada = formatear_entrada(entrada)
-                with div(id=f'entrada_{entrada.id}'):
-                    div(raw(entrada_formateada))
-    
-    return doc.render()
-
 def main():
     logging.basicConfig(filename = f'paradelmundo2PDF_{generar_marca()}.log', level=logging.DEBUG)
     logging.info(f'main')
     csv = 'todoslosposts.csv'
     filas = leer_csv(csv)
     libro_bruto = csv_en_entradas(filas)
-    libro_final = formato_final(libro_bruto)
-    for entrada in libro_final:
-        print(entrada)
+    #libro_final = formato_final(libro_bruto)
+    #for entrada in libro_final:
+    #    print(entrada)
     # escribir_txt(libro_final, f'resumenPDF_{generar_marca()}.html')
-    escribir_html(libro_final, f'resumenPDF_{generar_marca()}.html')
+    #escribir_html(libro_final, f'resumenPDF_{generar_marca()}.html')
         
-
 if __name__ == '__main__':
     main()
 
