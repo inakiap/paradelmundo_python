@@ -122,109 +122,6 @@ def rellenar_libro(fila, entradas, comentarios):
     logging.debug(linea)
     return entradas, comentarios 
 
-def tratar_imagenes(data):
-    logging.info('tratar_imagenes')
-    contenido = data
-    parser = ImgsParser()
-    parser.feed(data)
-    if len(parser.enlaces) > 0:
-        for enlace in parser.enlaces:
-            for attr in enlace:
-                print(attr)
-    if len(parser.imgs) > 0:
-        for img in parser.imgs:
-            for attr in img:
-                if attr[0] == 'src':
-                    img_corregida = corregir_img(attr[1])
-                    contenido = data.replace(attr[1],img_corregida)
-    return contenido
-
-def corregir_img(img):
-    logging.info('corregir_img')
-    resultado = ''
-    ruta_local = '/home/inakiap/Projects/backupParadelmundo/'
-    if img is not None:
-        if "uploads" in img:
-            resultado = f'{ruta_local}{img[img.find("uploads"):]}'
-    return resultado
-
-def formatear_entrada(entrada):
-    logging.info('formatear_entrada')
-    #Corregir la dirección de las imágenes
-    entrada.contenido = borrar_enlaces(entrada.contenido)
-    entrada.contenido = tratar_imagenes(entrada.contenido)
-    #Dar formato HTML a la entrada, crear una página de cada una
-    resultado = formato_HTML(entrada)
-    return resultado
-
-def borrar_enlaces(contenido):
-    logging.info('borrar_enlaces')
-    #if contenido is not None:
-        # if '<a ' in contenido:
-        #     pos_inicial = contenido.find('<a ')
-        #     control = True
-        #     while control:
-        #         if pos_inicial > 0:
-        #             logging.debug(f'Enlace posición: {pos_inicial}')
-        #             pos_fin = contenido.find('>',pos_inicial)
-        #             cadena_a_borrar = contenido[pos_inicial:pos_fin+1]
-        #             logging.debug(f'Se borrará: {cadena_a_borrar}')
-        #             contenido = contenido.replace(cadena_a_borrar,'')
-        #             pos_cierre = contenido.find('</a',pos_fin)
-        #             pos_cierre_fin = contenido.find('>',pos_cierre)
-        #             cadena_a_borrar = contenido[pos_cierre:pos_cierre_fin+1]
-        #             logging.debug(f'Se borrará: {cadena_a_borrar}')
-        #             contenido = contenido.replace(cadena_a_borrar,'')
-        #             pos_inicial = contenido.find('<a ')
-        #         else:
-        #             control = False
-
-    return contenido
-
-def formato_HTML(entrada):
-    logging.info('formato_HTML')
-    entrada_html = div(cls='col-md-12', id=f'entrada_{entrada.id}')
-    with entrada_html:
-        footer  = entrada_html.add(div(id='comentarios'))
-        if len(entrada.comentarios) > 0:
-            comentario_html = footer.add(div(id='comentario'))
-            for comentario in entrada.comentarios:
-                comentario_html.add(h5(comentario.autor_comentario))
-                comentario_html.add(p(comentario.fecha_comentario))
-                comentario_html.add(p(comentario.contenido_comentario))
-        div(raw(entrada.contenido),id='contenido')
-        
-        descrip = address()
-        descrip.add(strong(entrada.autor))
-        descrip.add(br())
-        descrip.add(raw(f'Fecha: {entrada.fecha} Último cambio: {entrada.ultimo_cambio}'))
-        header = div(id='header')
-        header.add(h3(entrada.titulo))
-        header.add(descrip)
-        
-        
-        
-    #return f'{entrada.id} {entrada.titulo} {entrada.autor} {entrada.fecha} {entrada.ultimo_cambio} {entrada.numero_comentarios} \n   {entrada.contenido}\n'
-    return f'{entrada_html}\n'
-
-def formato_final(entradas):
-    logging.info('formato_final')
-    doc = document(title='Paradelmundoquenosbajamos')
-    with doc.head:
-        link(rel='stylesheet', href='css/style.css')
-        link(rel='stylesheet', href='css/bootstrap.min.css')
-        meta(charset='utf-8')
-        meta(name='viewport', content='width=device-width, initial-scale=1')
-    with doc:
-        if entradas is not None:
-            with div(cls='container-fluid'):
-                for entrada in entradas:
-                    with div(cls='row'):
-                        entrada_formateada = formato_HTML(entrada)
-                        raw(entrada_formateada)
-        
-    return doc.render()
-
 def generar_marca():
     t = datetime.now()
     return f'{t.year}{t.month}{t.day}{t.hour}{t.minute}{t.second}'
@@ -234,8 +131,6 @@ def escribir_txt(entradas, archivo):
     if archivo is not None:
         with open(archivo, 'w') as r:
             for entrada in entradas:
-                # linea = formatear_entrada(entrada)
-                # r.write(linea)
                 logging.debug(entrada)
                 r.write(entrada)
 
@@ -249,7 +144,8 @@ def escribir_html(html, archivo):
 def main():
     logging.basicConfig(filename = f'paradelmundo2PDF_{generar_marca()}.log', level=logging.DEBUG)
     logging.info(f'main')
-    csv = 'todoslosposts.csv'
+    # csv = 'todoslosposts.csv'
+    csv = 'seleccion_contenidos_tratados.csv'
     filas = leer_csv(csv)
     libro_bruto = csv_en_entradas(filas)
     #libro_final = formato_final(libro_bruto)
