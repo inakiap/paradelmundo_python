@@ -7,7 +7,7 @@ from dominate import document
 from dominate.tags import *
 from dominate.util import raw
 from jinja2 import Environment, FileSystemLoader
-
+from weasyprint import HTML
 class Entrada:
     def __init__(self, id, autor, fecha, ultimo_cambio, titulo, contenido, categorias, etiquetas, numero_comentarios, comentarios):
         self.id = id
@@ -257,7 +257,17 @@ def main():
     #    print(entrada)
     # escribir_txt(libro_final, f'resumenPDF_{generar_marca()}.html')
     #escribir_html(libro_final, f'resumenPDF_{generar_marca()}.html')
-        
+    file_loader = FileSystemLoader('templates')
+    env = Environment(loader=file_loader)
+    template = env.get_template('showentradas.txt')
+    output = template.render(entradas=libro_bruto)
+    #print(output)
+    file_name = f'testTXT_{generar_marca()}.html'
+    escribir_txt(output, file_name)
+    #escribir_html(output, file_name)
+
+    #HTML(string=output).write_pdf(pdf_name)
+
 if __name__ == '__main__':
     main()
 
