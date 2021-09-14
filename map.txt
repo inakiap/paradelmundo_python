@@ -1,0 +1,39 @@
+Entrada
+Comentario
+ImgsParser(HTMLParser)
+
+---
+
+leer_csv(archivo)
+clean_links(html)
+clean_caption(html)
+tratar_imagenes(texto)
+corregir_img(imagen)
+corregir_tildes(texto)
+formatear_contenido(texto)
+corregir_videos(texto)
+generar_marca()
+escribir_csv(fila, archivo)
+limpiar_contenidos(html)
+
+---
+
+leer_csv(archivo)
+csv_en_entradas(filas)
+rellenar_comentarios(fila, indice_comentario, comentarios)
+rellenar_libro(fila, entradas, comentarios)
+generar_marca()
+escribir_txt(entradas, archivo)
+escribir_html(html, archivo)
+
+main():
+    leer_csv
+    csv_en_entradas
+    latex template
+    limpiar_contenidos
+    escribir_txt
+
+
+Problemas
+ - rellenar las imágenes, enlaces rotos 
+ - vocales mayúsculas X vocales con tilde

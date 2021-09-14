@@ -8,6 +8,7 @@ from dominate.tags import *
 from dominate.util import raw
 from jinja2 import Environment, FileSystemLoader
 from weasyprint import HTML
+import limpiarContenidoCSV
 class Entrada:
     def __init__(self, id, autor, fecha, ultimo_cambio, titulo, contenido, categorias, etiquetas, numero_comentarios, comentarios):
         self.id = id
@@ -124,7 +125,7 @@ def rellenar_libro(fila, entradas, comentarios):
 
 def generar_marca():
     t = datetime.now()
-    return f'{t.year}{t.month}{t.day}{t.hour}{t.minute}{t.second}'
+    return f'{t.year}{t.month:02d}{t.day:02d}{t.hour:02d}{t.minute:02d}{t.second:02d}'
 
 def escribir_txt(entradas, archivo):
     logging.info('escribir_txt')
@@ -144,21 +145,17 @@ def escribir_html(html, archivo):
 def main():
     logging.basicConfig(filename = f'paradelmundo2PDF_{generar_marca()}.log', level=logging.DEBUG)
     logging.info(f'main')
-    # csv = 'todoslosposts.csv'
-    csv = 'seleccion_contenidos_tratados.csv'
+    csv = 'todoslosposts.csv'
+    #csv = 'contenidos_tratados_2021620592.csv'
     filas = leer_csv(csv)
     libro_bruto = csv_en_entradas(filas)
-    #libro_final = formato_final(libro_bruto)
-    #for entrada in libro_final:
-    #    print(entrada)
-    # escribir_txt(libro_final, f'resumenPDF_{generar_marca()}.html')
-    #escribir_html(libro_final, f'resumenPDF_{generar_marca()}.html')
     file_loader = FileSystemLoader('templates')
     env = Environment(loader=file_loader)
     template = env.get_template('showentradas.txt')
     output = template.render(entradas=libro_bruto)
     #print(output)
-    file_name = f'testTXT_{generar_marca()}.html'
+    file_name = f'paradelHTML_{generar_marca()}.html'
+    output = limpiarContenidoCSV.limpiar_contenidos(output)    
     escribir_txt(output, file_name)
     #escribir_html(output, file_name)
 
