@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -30,23 +30,32 @@
 					{{ entrada.titulo }} 
 				</h1>
 			</div>
-			<h4>
-				{{ entrada.autor}}
-			</h4>
-			<h5 class="text-muted">
-				<small>
-                    {{ entrada.fecha }}
-                 </small>
-			</h5>
-			<p>
+            <div>
+                <h4>
+                    {{ entrada.autor}}
+                </h4>
+                <h5 class="text-muted">
+                    <smaller>
+                        {{ entrada.fecha }}
+                     </smaller>
+                </h5>
+            {% if entrada.etiquetas != "" %}
+                <h6 class="text-muted date">
+                    {{ entrada.etiquetas }}
+                </h6>
+            {% endif %}
+            {% if entrada.categorias != "" %}                
+                <h6 class="text-muted date">
+                    {{ entrada.categorias }}
+                </h6>
+            {% endif %}
+            </div>
+			
+			<div>
 				{{entrada.contenido}}
-			</p>
-            <h6 class="text-muted">
-				<small>{{ entrada.etiquetas }} </small>
-			</h6>
-
+            </div>
+    {% if entrada.numero_comentarios > '0' %}                
         {% for comentario in entrada.comentarios %}
-
 			<blockquote class="blockquote text-right">
 				<p class="mb-0">
 					{{ comentario.contenido_comentario }} 
@@ -60,9 +69,8 @@
                     </cite>
 				</footer>
 			</blockquote>
-        
         {% endfor %}    
-
+    {% endif %}
 		</div>
 	</div>
 

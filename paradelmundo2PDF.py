@@ -1,6 +1,8 @@
 import csv
 import html
 import logging
+import re
+
 from html.parser import HTMLParser
 from datetime import datetime
 from dominate import document
@@ -39,19 +41,20 @@ class ImgsParser(HTMLParser):
     HTMLParser.__init__(self)
     self.imgs = []
     self.enlaces = []
+    self.enlaces_end = []
 
   def handle_starttag(self, tag, attributes):
     if tag == 'img':
         self.imgs.append(attributes)
     elif tag == 'a':
-        self.enlaces.append(attributes)
+        self.enlaces.append(tag)
     else:
         return
 
   def handle_endtag(self, tag):
-      pass
-    # if tag == 'div' and self.recording:
-    #   self.recording -= 1
+      
+    if tag == 'a':
+        self.enlaces_end.append(tag)
 
   def handle_data(self, data):
       pass
@@ -116,12 +119,93 @@ def rellenar_comentarios(fila, indice_comentario, comentarios):
 
 def rellenar_libro(fila, entradas, comentarios):
     logging.info('rellenar_libro')
-    entradas.append(Entrada(fila[0],fila[1],fila[2],fila[3],fila[4],fila[5],fila[6],fila[7],fila[8],comentarios))
+    contenido = maquetar_contenido(fila[5])
+    fecha = formato_fecha(fila[2])
+    categorias = formato_categorias(fila[6])
+    etiquetas = formato_etiquetas(fila[7])
+    entradas.append(Entrada(fila[0],fila[1],fecha,fila[3],fila[4],contenido,categorias, etiquetas,fila[8],comentarios))
     comentarios = []
     linea = f'Entrada [{fila[0]}] [{fila[3]}] {fila[4]} de {fila[1]}'
     print(linea)
     logging.debug(linea)
     return entradas, comentarios 
+
+def maquetar_contenido(texto):
+    print(texto)
+    resultado = clean_links(texto)
+    # resultado = clean_caption(resultado)
+    resultado = tratar_imagenes(resultado)
+    return resultado
+
+def formato_fecha(fecha):
+    dt_format = datetime.strptime(fecha,'%Y-%m-%d %H:%M:%S')
+    resultado = datetime.strftime(dt_format, '%d/%m/%Y')
+    return resultado
+
+def formato_categorias(texto):
+    if texto == 'NULL':
+        texto = ''
+    return texto
+
+def formato_etiquetas(texto):
+    if texto == 'NULL':
+        texto = ''
+    return texto
+
+def clean_links(raw_html):
+  cleanr = re.compile('</a>|<a.*?>')
+  cleantext = re.sub(cleanr, '', raw_html)
+  return cleantext
+
+def clean_caption(raw_html):
+  cleanr = re.compile('[caption .*?]')
+#   cleanr = re.compile('[/caption]|[caption .*?]')
+  cleantext = re.sub(cleanr, '', raw_html)
+  return cleantext
+
+def tratar_imagenes(data):
+    logging.info('tratar_imagenes')
+    contenido = data
+    parser = ImgsParser()
+    parser.feed(data)
+    # if len(parser.enlaces) > 0:
+    #     for enlace in parser.enlaces:
+    #         for attr in enlace:
+    #             logging.debug(f'enlace attr {attr}')
+    contenido = data
+    if len(parser.imgs) > 0:
+        for img in parser.imgs:
+            for attr in img:
+                if attr[0] == 'src':
+                    x = list(attr)
+                    img_ori = x[1]
+                    img_corregida = corregir_img(img_ori)
+                    x[1] = img_corregida
+                    attr = tuple(x)
+                    contenido = contenido.replace(img_ori,img_corregida)
+                elif attr[0] == 'height' or attr[0] == 'width' or attr[0] == 'alt' or attr[0] == 'class':
+                    x = f'{attr[0]}="{attr[1]}" '
+                    contenido = contenido.replace(x,'')
+    print(contenido)
+    return contenido
+
+def corregir_img(img):
+    logging.info(f'corregir_img {img}')
+    resultado = img
+    ruta_local = '/home/inakiap/Projects/backupParadelmundo/'
+    ruta_local2 = '/home/inakiap/Imágenes/imgBlogRescatadas'
+    if img is not None:
+        if "wp-content/uploads" in img:
+            resultado = f'{ruta_local}{img[img.find("uploads"):]}'
+
+        if "ggpht.com" in img:
+            resultado = f'{ruta_local2}{img[img.rfind("/"):]}'
+
+        if "/galaxy.jpg" in img:
+            resultado = '/home/inakiap/Imágenes/galaxy.jpg'
+    
+    logging.info(f'resultado {resultado}')
+    return resultado
 
 def generar_marca():
     t = datetime.now()
@@ -151,13 +235,15 @@ def main():
     libro_bruto = csv_en_entradas(filas)
     file_loader = FileSystemLoader('templates')
     env = Environment(loader=file_loader)
-    template = env.get_template('showentradas.txt')
+    template = env.get_template('showentradas2.html')
     output = template.render(entradas=libro_bruto)
     #print(output)
-    file_name = f'paradelHTML_{generar_marca()}.html'
+    file_name = f'paradelHTML_Temp.html'
+    # file_name = f'paradelHTML_{generar_marca()}.html'
+
     output = limpiarContenidoCSV.limpiar_contenidos(output)    
-    escribir_txt(output, file_name)
-    #escribir_html(output, file_name)
+    #escribir_txt(output, file_name)
+    escribir_html(output, file_name)
 
     #HTML(string=output).write_pdf(pdf_name)
 

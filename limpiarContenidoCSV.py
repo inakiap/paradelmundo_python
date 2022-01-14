@@ -103,7 +103,7 @@ def tratar_imagenes(data):
                     img_corregida = corregir_img(img_ori)
                     x[1] = img_corregida
                     attr = tuple(x)
-                    #contenido = data.replace(img_ori,img_corregida)
+                    contenido = data.replace(img_ori,img_corregida)
     return contenido
 
 def corregir_img(img):
