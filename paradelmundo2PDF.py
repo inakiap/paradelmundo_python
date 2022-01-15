@@ -2,6 +2,7 @@ import csv
 import html
 import logging
 import re
+import codecs
 
 from html.parser import HTMLParser
 from datetime import datetime
@@ -10,6 +11,7 @@ from dominate.tags import *
 from dominate.util import raw
 from jinja2 import Environment, FileSystemLoader
 from weasyprint import HTML
+from bs4 import BeautifulSoup
 import limpiarContenidoCSV
 class Entrada:
     def __init__(self, id, autor, fecha, ultimo_cambio, titulo, contenido, categorias, etiquetas, numero_comentarios, comentarios):
@@ -226,22 +228,35 @@ def escribir_html(html, archivo):
         html_file.write(html)
         html_file.close()
 
+def limpiar_entradas(libro):
+    logging.info('limpiar entradas')
+    #tomar el contenido y limpiar el formato html y listar los elementos gráficos
+
+    return libro
+
 def main():
     logging.basicConfig(filename = f'paradelmundo2PDF_{generar_marca()}.log', level=logging.DEBUG)
     logging.info(f'main')
-    csv = 'todoslosposts.csv'
+    csv = 'entradas_Limpias.csv'
     #csv = 'contenidos_tratados_2021620592.csv'
     filas = leer_csv(csv)
     libro_bruto = csv_en_entradas(filas)
+    entradas_limpiadas = limpiar_entradas(libro_bruto)
+
+
     file_loader = FileSystemLoader('templates')
     env = Environment(loader=file_loader)
     template = env.get_template('showentradas2.html')
     output = template.render(entradas=libro_bruto)
     #print(output)
-    file_name = f'paradelHTML_Temp.html'
-    # file_name = f'paradelHTML_{generar_marca()}.html'
 
-    output = limpiarContenidoCSV.limpiar_contenidos(output)    
+    soup = BeautifulSoup(output)
+    output = soup.prettify()
+    
+    # file_name = f'paradelHTML_Temp.html'
+    file_name = f'paradelHTML_{generar_marca()}.html'
+
+    #output = limpiarContenidoCSV.limpiar_contenidos(output)    
     #escribir_txt(output, file_name)
     escribir_html(output, file_name)
 
